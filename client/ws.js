@@ -49,6 +49,8 @@ const handleMessage = message => {
       const idElement = document.createElement('p')
       idElement.textContent = `Your id: ${myId.toString()}`
       document.body.appendChild(idElement)
+    } else if (data.hasOwnProperty('ping')) {
+      ws.send(JSON.stringify({ pong: true }))
     }
   } catch (error) {
     console.log(error)

@@ -1,7 +1,9 @@
 const WebSocket = require('ws')
 const port = 8080
-const clients = []
-const coordinates = []
+let pingCounter = 0
+let idCounter = 0
+let clients = []
+let coordinates = []
 const clientInput = {}
 const width = 640
 const height = 480
@@ -14,17 +16,22 @@ const wss = new WebSocket.Server({
 })
 
 const addClient = ws => {
-  ws.send(JSON.stringify({ id: clients.length }))
-  clients.push(ws)
-  coordinates.push({ id: clients.length - 1, x: 0, y: 0 })
+  let id = idCounter++
+  ws.send(JSON.stringify({ id: id }))
+  clients.push({ id: id, ws: ws })
+  coordinates.push({ id: id, x: 0, y: 0 })
 }
 
 const handleMessage = (ws, message) => {
   try {
     const parsedMessage = JSON.parse(message)
-    clients.forEach((client, i) => {
-      if (client === ws) {
-        clientInput[i] = parsedMessage
+    clients.forEach(client => {
+      if (client.ws === ws) {
+        if (parsedMessage.pong) {
+          client.pong = true
+        } else {
+          clientInput[client.id] = parsedMessage
+        }
       }
     })
   } catch (e) {
@@ -41,7 +48,7 @@ wss.on('connection', ws => {
 
 const broadcastCoordinates = () => {
   clients.forEach(client => {
-    client.send(JSON.stringify({ coordinates: coordinates }))
+    client.ws.send(JSON.stringify({ coordinates: coordinates }))
   })
 }
 
@@ -69,11 +76,31 @@ const moveCharacters = () => {
   }
 }
 
+const ping = () => {
+  const deadClients = []
+  clients.forEach(client => {
+    client.ws.send(JSON.stringify({ ping: true }))
+    if (client.pong === false) {
+      deadClients.push(client.id)
+      delete clientInput[client.id]
+    } else {
+      client.pong = false
+    }
+  })
+  clients = clients.filter(e => !deadClients.includes(e.id))
+  coordinates = coordinates.filter(e => !deadClients.includes(e.id))
+}
+
 const updateGame = () => {
   if (clients.length > 0) {
+    if (pingCounter >= 50) {
+      ping()
+      pingCounter = 0
+    }
     handleGravity()
     moveCharacters()
     broadcastCoordinates()
+    pingCounter++
   }
 }
 
