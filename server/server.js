@@ -1,25 +1,17 @@
 const WebSocket = require('ws')
-const port = 8080
+const movement = require('./movement')
 let pingCounter = 0
 let idCounter = 0
 let clients = []
 let coordinates = []
 const clientInput = {}
-const width = 640
-const height = 480
-const characterSize = 32
-const speed = 5
-const gravity = 2
-
-const wss = new WebSocket.Server({
-  port: port
-})
 
 const addClient = ws => {
   let id = idCounter++
   ws.send(JSON.stringify({ id: id }))
   clients.push({ id: id, ws: ws })
   coordinates.push({ id: id, x: 0, y: 0 })
+  clientInput[id] = {}
 }
 
 const handleMessage = (ws, message) => {
@@ -39,41 +31,10 @@ const handleMessage = (ws, message) => {
   }
 }
 
-wss.on('connection', ws => {
-  addClient(ws)
-  ws.on('message', message => {
-    handleMessage(ws, message)
-  })
-})
-
 const broadcastCoordinates = () => {
   clients.forEach(client => {
     client.ws.send(JSON.stringify({ coordinates: coordinates }))
   })
-}
-
-const handleGravity = () => {
-  for (let c of coordinates) {
-    c.y += gravity
-    if (c.y > height - characterSize) c.y = height - characterSize
-  }
-}
-
-const moveCharacters = () => {
-  for (let c of coordinates) {
-    if (clientInput[c.id] && clientInput[c.id]['KeyA']) {
-      c.x -= speed
-      if (c.x < 0) c.x = 0
-    }
-    if (clientInput[c.id] && clientInput[c.id]['KeyD']) {
-      c.x += speed
-      if (c.x > width - characterSize) c.x = width - characterSize
-    }
-    if (clientInput[c.id] && clientInput[c.id]['Space']) {
-      c.y -= speed
-      if (c.y < 0) c.y = 0
-    }
-  }
 }
 
 const ping = () => {
@@ -97,13 +58,28 @@ const updateGame = () => {
       ping()
       pingCounter = 0
     }
-    handleGravity()
-    moveCharacters()
+    movement.handleGravity(coordinates)
+    movement.moveCharacters(coordinates, clientInput)
     broadcastCoordinates()
     pingCounter++
   }
 }
 
-setInterval(updateGame, 16)
+const start = () => {
+  const port = 8080
+  const wss = new WebSocket.Server({
+    port: port
+  })
 
-console.log(`Started websocket server on port ${port}`)
+  wss.on('connection', ws => {
+    addClient(ws)
+    ws.on('message', message => {
+      handleMessage(ws, message)
+    })
+  })
+
+  console.log(`Started websocket server on port ${port}`)
+  setInterval(updateGame, 16)
+}
+
+start()
