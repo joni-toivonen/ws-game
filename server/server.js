@@ -73,6 +73,7 @@ const start = () => {
 
   wss.on('connection', ws => {
     addClient(ws)
+    ws.send(JSON.stringify({ platforms: movement.platforms }))
     ws.on('message', message => {
       handleMessage(ws, message)
     })

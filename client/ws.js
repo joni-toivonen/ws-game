@@ -6,6 +6,7 @@ canvas.setAttribute('tabindex', '0')
 const context = canvas.getContext('2d')
 const characterSize = 32
 const keyState = {}
+let platforms = []
 let myId
 
 const handleInput = e => {
@@ -19,6 +20,12 @@ const handleInput = e => {
   }
 }
 
+const drawMap = () => {
+  for (let p of platforms) {
+    context.fillRect(p.x, p.y, p.width, p.height)
+  }
+}
+
 const gameArea = {
   start: () => {
     document.body.insertBefore(canvas, document.body.childNodes[0]);
@@ -29,6 +36,7 @@ const gameArea = {
   },
   clear: () => {
     context.clearRect(0, 0, canvas.width, canvas.height)
+    drawMap()
   }
 }
 
@@ -51,6 +59,8 @@ const handleMessage = message => {
       document.body.appendChild(idElement)
     } else if (data.hasOwnProperty('ping')) {
       ws.send(JSON.stringify({ pong: true }))
+    } else if (data.hasOwnProperty('platforms')) {
+      platforms = data.platforms
     }
   } catch (error) {
     console.log(error)
