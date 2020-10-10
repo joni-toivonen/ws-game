@@ -40,10 +40,26 @@ const gameArea = {
   }
 }
 
+const getPokePosition = coordinate => {
+  const pokePosition = { y: coordinate.y + characterSize / 3,
+                         width: characterSize / 2,
+                         height: characterSize / 4 }
+  coordinate.facing === 'left'
+    ? pokePosition.x = coordinate.x - characterSize / 2
+    : pokePosition.x = coordinate.x + characterSize
+  return pokePosition
+}
+
 const drawPlayers = coordinates => {
-  for (let c of coordinates) {
+  context.fillText('Scores:', 570, 10)
+  coordinates.forEach((c, i) => {
     context.fillRect(c.x, c.y, characterSize, characterSize)
-  }
+    if (c.poking) {
+      const pokePosition = getPokePosition(c)
+      context.fillRect(pokePosition.x, pokePosition.y, pokePosition.width, pokePosition.height)
+    }
+    context.fillText(`Player${c.id}: ${c.score}`, 570, 10 + 15*(i + 1))
+  })
 }
 
 const handleMessage = message => {

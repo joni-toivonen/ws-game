@@ -10,7 +10,7 @@ const addClient = ws => {
   let id = idCounter++
   ws.send(JSON.stringify({ id: id }))
   clients.push({ id: id, ws: ws })
-  coordinates.push({ id: id, x: 0, y: 0 })
+  coordinates.push({ id: id, x: 0, y: 0, facing: 'right', poking: false, score: 0 })
   clientInput[id] = {}
 }
 
@@ -59,7 +59,7 @@ const updateGame = () => {
       pingCounter = 0
     }
     movement.handleGravity(coordinates)
-    movement.moveCharacters(coordinates, clientInput)
+    movement.handleInput(coordinates, clientInput)
     broadcastCoordinates()
     pingCounter++
   }
